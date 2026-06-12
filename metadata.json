@@ -1,0 +1,8 @@
+{
+  "name": "SRASS Swarm - AI Innovation Boardroom System",
+  "description": "Multi-agent AI boardroom simulation simulating Research, Critic, Engineer, and Strategist agents debating and analyzing user ideas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

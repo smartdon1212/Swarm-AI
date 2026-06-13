@@ -222,16 +222,16 @@ export default function App() {
               <Cpu className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-display font-bold tracking-[0.15em] text-blue-500 uppercase">
-                  SRASS Swarm
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-lg font-display font-extrabold tracking-[0.2em] text-blue-500 uppercase">
+                  SWARM
                 </h1>
-                <span className="text-[9px] font-mono border border-white/10 bg-white/5 text-white/60 px-1.5 py-0.2 rounded font-bold uppercase tracking-wider">
-                  SYSTEM
+                <span className="text-[10px] text-slate-500 font-mono tracking-wider">
+                  by <strong className="font-semibold text-slate-450">SRASS</strong>
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 tracking-wide font-mono uppercase mt-0.5">
-                AI Multi-Agent Innovation Boardroom System
+              <p className="text-[9px] text-slate-400 tracking-wider font-mono uppercase mt-0.5">
+                Research • Critique • Engineer • Decide
               </p>
             </div>
           </div>
@@ -257,7 +257,62 @@ export default function App() {
       </header>
 
       {/* 2. Main Workspace Layout */}
-      <main className="max-w-7xl mx-auto w-full px-4 py-6 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <main className="max-w-7xl mx-auto w-full px-4 py-6 flex-grow flex flex-col gap-6">
+
+        {/* Top Branding Section (Hackathon Ready) */}
+        <div className="bg-[#0D0D0F] border border-white/5 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md">
+          {/* Ambient subtle backdrop glow */}
+          <div className="absolute -left-12 -top-12 w-48 h-48 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
+          <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
+          
+          <div className="space-y-1.5 text-center md:text-left z-10">
+            <div className="flex items-center justify-center md:justify-start gap-3">
+              <span className="text-[10px] font-mono tracking-wider uppercase text-emerald-400 font-bold bg-emerald-950/45 border border-emerald-500/20 px-2 py-0.5 rounded">
+                HACKATHON BUILD
+              </span>
+              <span className="text-[10px] font-mono tracking-wider text-slate-500">
+                Built by <strong className="text-slate-400">SRASS</strong>
+              </span>
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-[0.25em] bg-gradient-to-r from-blue-400 via-indigo-200 to-teal-400 bg-clip-text text-transparent uppercase pt-1">
+              SWARM
+            </h1>
+            
+            <p className="text-sm md:text-base font-semibold text-slate-300 font-display tracking-wide uppercase">
+              Multi-Agent Innovation Boardroom
+            </p>
+            
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2.5 gap-y-1 text-xs text-slate-400 font-mono pt-1">
+              <span className="text-blue-400">Research</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-rose-400">Critique</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-amber-400">Engineer</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-emerald-400">Decide</span>
+            </div>
+          </div>
+          
+          {/* Subtle real-time metadata box */}
+          <div className="border border-white/5 bg-[#121214] rounded-lg p-4 font-mono text-xs text-slate-400 space-y-2.5 min-w-[250px] z-10 w-full md:w-auto">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-500">Engine Cluster:</span>
+              <span className="text-emerald-400 font-semibold uppercase">Active</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
+              <span className="text-slate-500">Board Dialectics:</span>
+              <span className="text-slate-300">Asynchronous</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
+              <span className="text-slate-500">Orchestration:</span>
+              <span className="text-indigo-400 font-semibold uppercase">Qwen Swarm</span>
+            </div>
+          </div>
+        </div>
+
+        {/* The Grid Workspace */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* LEFT COLUMN/SIDEBAR - SUBMISSION PANEL & DYNAMIC SEED TEMPLATES */}
         <div className="lg:col-span-1 flex flex-col gap-6">
@@ -600,12 +655,14 @@ export default function App() {
 
         </div>
 
+      </div>
+
       </main>
 
       {/* 3. Global Footer */}
       <footer className="border-t border-white/5 bg-[#0D0D0F] py-5 mt-12 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>SRASS SWARM • Real-time Innovation Boardroom</span>
+          <span>SWARM • Built by SRASS</span>
           <span className="text-slate-600">No mock code • Powered by Qwen Swarm Multi-Agent Engine</span>
         </div>
       </footer>

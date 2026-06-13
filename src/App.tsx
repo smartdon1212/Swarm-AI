@@ -663,7 +663,7 @@ export default function App() {
       <footer className="border-t border-white/5 bg-[#0D0D0F] py-5 mt-12 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>SWARM • Built by SRASS</span>
-          <span className="text-slate-600">No mock code • Powered by Qwen Swarm Multi-Agent Engine</span>
+          <span className="text-slate-600">Powered by Qwen Swarm Multi-Agent Engine</span>
         </div>
       </footer>
 

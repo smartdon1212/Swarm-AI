@@ -323,7 +323,7 @@ export default function App() {
             </form>
           </section>
 
-          {/* B. Suggested Templates Grid (Hackathon Ready) */}
+          {/* B. Suggested Templates Grid */}
           <section className="bg-[#0D0D0F] border border-white/5 rounded-lg p-5 shadow-sm">
             <h2 className="text-xs font-semibold tracking-wide text-slate-300 uppercase font-mono mb-3.5 flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-emerald-400" />

@@ -227,7 +227,7 @@ export default function App() {
                   SWARM
                 </h1>
                 <span className="text-[10px] text-slate-500 font-mono tracking-wider">
-                  by <strong className="font-semibold text-slate-450">SRASS</strong>
+                  by <strong className="font-semibold text-slate-400">SRASS</strong>
                 </span>
               </div>
               <p className="text-[9px] text-slate-400 tracking-wider font-mono uppercase mt-0.5">
@@ -315,9 +315,7 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* LEFT COLUMN/SIDEBAR - SUBMISSION PANEL & DYNAMIC SEED TEMPLATES */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          
-          {/* A. Submit Project Area */}
+        <div className="lg:col-span-1 flex flex-col gap-6">          {/* A. Submit Project Area */}
           <section className="bg-slate-900/30 border border-slate-900 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold tracking-wide text-slate-300 uppercase font-mono flex items-center gap-1.5">
@@ -461,7 +459,7 @@ export default function App() {
           <section className="bg-[#0D0D0F] border border-white/5 rounded-lg p-5 shadow-sm">
             {isAnalyzing ? (
               <div className="flex flex-col md:flex-row items-center gap-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-amber-950/40 border border-amber-500/20 flex items-center justify-center text-amber-500 animate-spin">
+                <div className="w-10 h-10 rounded-full bg-amber-955/40 border border-amber-500/20 flex items-center justify-center text-amber-500 animate-spin">
                   <RefreshCw className="w-5 h-5" />
                 </div>
                 <div>
@@ -495,15 +493,15 @@ export default function App() {
                     <strong className={`text-3xl font-mono font-bold block mt-0.5 score-glow-text ${
                       activeProject.score >= 80 ? 'text-emerald-400' :
                       activeProject.score >= 60 ? 'text-amber-400' :
-                      'text-rose-400'
+                      'text-rose-450'
                     }`}>
                       {activeProject.score}<span className="text-xs text-slate-500">%</span>
                     </strong>
                   </div>
                   <div className={`w-12 h-12 rounded-lg border flex items-center justify-center ${
-                    activeProject.score >= 80 ? 'bg-emerald-950/45 border-emerald-500/30 text-emerald-400' :
-                    activeProject.score >= 60 ? 'bg-amber-950/45 border-amber-500/30 text-amber-400' :
-                    'bg-rose-950/45 border-rose-500/20 text-rose-450'
+                    activeProject.score >= 80 ? 'bg-emerald-955/45 border-emerald-500/30 text-emerald-400' :
+                    activeProject.score >= 60 ? 'bg-amber-955/45 border-amber-500/30 text-amber-400' :
+                    'bg-rose-955/45 border-rose-500/20 text-rose-450'
                   }`}>
                     <TrendingUp className="w-6 h-6" />
                   </div>

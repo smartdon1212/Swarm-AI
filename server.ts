@@ -160,7 +160,7 @@ export interface AIProvider {
   generate(prompt: string): Promise<string>;
 }
 
-// Gemini active provider using the official @google/genai SDK
+// Gemini active provider using the official @google/genai SDK with exponential backoff and model auto-fallback
 class GeminiProvider implements AIProvider {
   private ai: GoogleGenAI;
   private model: string;
@@ -182,19 +182,63 @@ class GeminiProvider implements AIProvider {
   }
 
   async generate(prompt: string): Promise<string> {
-    try {
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents: prompt,
-      });
-      if (!response.text) {
-        throw new Error("Empty response received from Gemini.");
-      }
-      return response.text;
-    } catch (err: any) {
-      console.error("Gemini Provider execution failed:", err);
-      throw new Error(`Gemini API Error: ${err.message || err}`);
+    const modelsToTry = [this.model];
+    
+    // Auto-fallback chain: if primary is gemini-3.5-flash, fall back to gemini-3.1-flash-lite
+    if (this.model === "gemini-3.5-flash" || this.model === "gemini-flash-latest") {
+      modelsToTry.push("gemini-3.1-flash-lite");
+    } else if (!modelsToTry.includes("gemini-3.5-flash")) {
+      modelsToTry.push("gemini-3.5-flash");
     }
+
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+      const maxRetries = 3;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`[Gemini Swarm] Querying model ${modelName} - Attempt ${attempt}/${maxRetries}`);
+          const response = await this.ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+          });
+
+          if (!response.text) {
+            throw new Error("Empty response received from Gemini.");
+          }
+          
+          console.log(`[Gemini Swarm] Successful response generation via ${modelName}`);
+          return response.text;
+        } catch (err: any) {
+          lastError = err;
+          const statusText = String(err.message || err);
+          console.error(`[Gemini Swarm] Attempt ${attempt} failed on model ${modelName}. Error:`, statusText);
+
+          // If it is a non-retryable config/security/parameters error, fail immediately
+          if (
+            statusText.includes("API_KEY") || 
+            statusText.includes("INVALID_ARGUMENT") || 
+            statusText.includes("API key not valid") ||
+            statusText.includes("401") ||
+            statusText.includes("403")
+          ) {
+            throw new Error(`Gemini API Auth/Config Error: ${statusText}`);
+          }
+
+          // If we have remaining attempts, pause with exponential delay before trying again
+          if (attempt < maxRetries) {
+            const delayMs = Math.pow(2, attempt) * 600 + Math.random() * 300;
+            console.log(`[Gemini Swarm] Demands/Transient error. Waiting ${Math.round(delayMs)}ms before retry...`);
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+          }
+        }
+      }
+      console.warn(`[Gemini Swarm] Model ${modelName} exhausted all ${maxRetries} attempts. Trying fallback model in chain...`);
+    }
+
+    // If all models and attempts are failed, format the final error nicely
+    const errMsg = lastError?.message || String(lastError);
+    throw new Error(`Gemini API Error (All models and retries exhausted): ${errMsg}`);
   }
 }
 

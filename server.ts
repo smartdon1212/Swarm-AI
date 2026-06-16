@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -154,48 +155,101 @@ function extractIdeaFromPrompt(prompt: string): string {
   return "Decentralized enterprise network solution";
 }
 
-// Unified callQwen function utilizing DashScope OpenAI-compatible API
-async function callQwen(prompt: string): Promise<string> {
-  const apiKey = getQwenApiKey();
+// AI Provider Abstraction Interface
+export interface AIProvider {
+  generate(prompt: string): Promise<string>;
+}
 
-  if (!apiKey) {
-    throw new Error("Qwen API key (QWEN_API_KEY or DASHSCOPE_API_KEY) is not configured in your environment settings. Please specify the API key to activate live analysis.");
-  }
+// Gemini active provider using the official @google/genai SDK
+class GeminiProvider implements AIProvider {
+  private ai: GoogleGenAI;
+  private model: string;
 
-  const url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
-  const model = process.env.QWEN_MODEL || "qwen-plus";
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7
-      })
+  constructor() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured in your environment settings (Settings > Secrets). Please configure it to activate live analysis.");
+    }
+    this.ai = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Aliyun DashScope Qwen API returned status ${response.status}: ${errText}`);
-    }
-
-    const data: any = await response.json();
-    const resultText = data.choices?.[0]?.message?.content;
-    if (!resultText) {
-      throw new Error("Invalid response structural envelope from Qwen API.");
-    }
-    return resultText;
-  } catch (err: any) {
-    console.error("Qwen API call error:", err);
-    throw new Error(err.message || "Communication with Qwen API failed.");
+    this.model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
   }
+
+  async generate(prompt: string): Promise<string> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model: this.model,
+        contents: prompt,
+      });
+      if (!response.text) {
+        throw new Error("Empty response received from Gemini.");
+      }
+      return response.text;
+    } catch (err: any) {
+      console.error("Gemini Provider execution failed:", err);
+      throw new Error(`Gemini API Error: ${err.message || err}`);
+    }
+  }
+}
+
+// Qwen provider utilizing DashScope OpenAI-compatible API
+class QwenProvider implements AIProvider {
+  async generate(prompt: string): Promise<string> {
+    const apiKey = getQwenApiKey();
+    if (!apiKey) {
+      throw new Error("Qwen API key (QWEN_API_KEY or DASHSCOPE_API_KEY) is not configured in your environment settings. Please specify the API key to activate live analysis.");
+    }
+
+    const url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+    const model = process.env.QWEN_MODEL || "qwen-plus";
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Aliyun DashScope Qwen API returned status ${response.status}: ${errText}`);
+      }
+
+      const data: any = await response.json();
+      const resultText = data.choices?.[0]?.message?.content;
+      if (!resultText) {
+        throw new Error("Invalid response structural envelope from Qwen API.");
+      }
+      return resultText;
+    } catch (err: any) {
+      console.error("Qwen API call error:", err);
+      throw new Error(err.message || "Communication with Qwen API failed.");
+    }
+  }
+}
+
+// Factory to retrieve active provider based on environment config
+function getAIProvider(): AIProvider {
+  const providerType = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+  if (providerType === "qwen") {
+    return new QwenProvider();
+  }
+  return new GeminiProvider();
 }
 
 // Helper to clean Markdown and parse JSON returned from AI solutions
@@ -211,8 +265,17 @@ function cleanAndParseJSON(raw: string): any {
 
 // REST Endpoints
 app.get("/api/status", (req, res) => {
+  const providerType = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+  const qwenKeyPresent = !!getQwenApiKey();
+  
+  let label = "Gemini Provider Active";
+  if (providerType === "qwen") {
+    label = qwenKeyPresent ? "Qwen Swarm API Active" : "Qwen Swarm API (Key Pending)";
+  }
+
   res.json({
-    qwenActive: !!getQwenApiKey(),
+    activeProvider: providerType,
+    providerLabel: label,
     currentTime: new Date().toISOString()
   });
 });
@@ -250,7 +313,10 @@ app.post("/api/analyze", async (req, res) => {
     }
 
     const trimmedIdea = idea.trim();
-    console.log(`Starting Qwen Multi-Agent Boardroom execution for idea: "${trimmedIdea.substring(0, 60)}"`);
+    const provider = getAIProvider();
+    const providerName = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+    const providerLabel = providerName === "qwen" ? "Qwen" : "Gemini";
+    console.log(`Starting ${providerLabel} Multi-Agent Boardroom execution for idea: "${trimmedIdea.substring(0, 60)}"`);
 
     // 1. Prepare prompts for Research, Critic, and Engineer agents
     const researchPrompt = `You are the Research Agent in a multi-agent innovation boardroom.
@@ -344,11 +410,11 @@ OUTPUT FORMAT:
 
 User Idea: "${trimmedIdea}"`;
 
-    console.log("Polling Qwen API for individual agent perspectives in parallel...");
+    console.log(`Polling ${providerLabel} API for individual agent perspectives in parallel...`);
     const [researchStr, criticStr, engineerStr] = await Promise.all([
-      callQwen(researchPrompt),
-      callQwen(criticPrompt),
-      callQwen(engineerPrompt)
+      provider.generate(researchPrompt),
+      provider.generate(criticPrompt),
+      provider.generate(engineerPrompt)
     ]);
 
     console.log("Drafting Strategist synthesis using Research, Critic, and Engineer feedback...");
@@ -406,7 +472,7 @@ Return a valid JSON object containing exactly these fields (with NO extra text, 
 
 Ensure to escape double quotes correctly inside JSON values. Return ONLY the raw JSON object.`;
 
-    const strategistRaw = await callQwen(strategistPrompt);
+    const strategistRaw = await provider.generate(strategistPrompt);
     
     let strategistObj = {
       score: 75,
@@ -424,7 +490,7 @@ Ensure to escape double quotes correctly inside JSON values. Return ONLY the raw
         strategistObj.strategist_synthesis = parsed.synthesis;
       }
     } catch (parseErr) {
-      console.error("Failed to parse Strategist JSON response from Qwen, falling back safely. Content raw was: ", strategistRaw);
+      console.error(`Failed to parse Strategist JSON response from ${providerLabel}, falling back safely. Content raw was: `, strategistRaw);
       // Fallback parser: search for "score" key or similar
       const scoreMatch = strategistRaw.match(/"score"\s*:\s*(\d+)/);
       if (scoreMatch) {
@@ -450,7 +516,7 @@ Ensure to escape double quotes correctly inside JSON values. Return ONLY the raw
     db.push(newProject);
     writeDB(db);
 
-    console.log(`Qwen assessment completed successfully. Project saved with ID: ${savedId}. Viability Score: ${newProject.score}%`);
+    console.log(`${providerLabel} assessment completed successfully. Project saved with ID: ${savedId}. Viability Score: ${newProject.score}%`);
 
     return res.json({
       research: newProject.research,
@@ -463,7 +529,7 @@ Ensure to escape double quotes correctly inside JSON values. Return ONLY the raw
     });
 
   } catch (error: any) {
-    console.error("Qwen Boardroom process failed:", error);
+    console.error("Boardroom process failed:", error);
     res.status(500).json({ error: error.message || "An error occurred during multi-agent analysis." });
   }
 });

@@ -80,7 +80,8 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [qwenActive, setQwenActive] = useState(false);
+  const [activeProvider, setActiveProvider] = useState('gemini');
+  const [providerLabel, setProviderLabel] = useState('Gemini Provider Active');
   const [activeTab, setActiveTab] = useState<'debate' | 'roadmap'>('debate');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -117,10 +118,11 @@ export default function App() {
       const res = await fetch('/api/status');
       if (res.ok) {
         const data = await res.json();
-        setQwenActive(data.qwenActive);
+        setActiveProvider(data.activeProvider || "gemini");
+        setProviderLabel(data.providerLabel || "Gemini Provider Active");
       }
     } catch (e) {
-      console.warn("Could not check Qwen active config parameters, dev sandbox running.");
+      console.warn("Could not check active config parameters, dev sandbox running.");
     }
   };
 
@@ -239,11 +241,17 @@ export default function App() {
           {/* Engine Real-time Telemetry Stats */}
           <div className="flex items-center gap-3 font-mono text-xs">
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
-              qwenActive ? 'bg-blue-950/40 border-blue-500/20 text-blue-300' : 'bg-amber-950/40 border-amber-500/20 text-amber-300'
+              activeProvider === 'qwen' && providerLabel.includes('Pending')
+                ? 'bg-amber-950/40 border-amber-500/20 text-amber-300'
+                : 'bg-blue-950/40 border-blue-500/20 text-blue-300'
             }`}>
-              <span className={`w-2 h-2 rounded-full ${qwenActive ? 'bg-blue-400 animate-pulse' : 'bg-amber-500/80'}`}></span>
+              <span className={`w-2 h-2 rounded-full ${
+                activeProvider === 'qwen' && providerLabel.includes('Pending')
+                  ? 'bg-amber-500/80'
+                  : 'bg-blue-400 animate-pulse'
+              }`}></span>
               <span>
-                Engine: <strong className="font-semibold">{qwenActive ? 'Qwen Swarm API' : 'Qwen Swarm API (Key Pending)'}</strong>
+                Engine: <strong className="font-semibold">{providerLabel}</strong>
               </span>
             </div>
             
@@ -306,7 +314,7 @@ export default function App() {
             </div>
             <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
               <span className="text-slate-500">Orchestration:</span>
-              <span className="text-indigo-400 font-semibold uppercase">Qwen Swarm</span>
+              <span className="text-indigo-400 font-semibold uppercase">{activeProvider === 'qwen' ? 'Qwen Swarm' : 'Gemini Swarm'}</span>
             </div>
           </div>
         </div>
@@ -661,7 +669,7 @@ export default function App() {
       <footer className="border-t border-white/5 bg-[#0D0D0F] py-5 mt-12 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>SWARM • Built by SRASS</span>
-          <span className="text-slate-600">Powered by Qwen Swarm Multi-Agent Engine</span>
+          <span className="text-slate-600 font-semibold">Powered by {activeProvider === 'qwen' ? 'Qwen Swarm' : 'Gemini Swarm'} Multi-Agent Engine</span>
         </div>
       </footer>
 

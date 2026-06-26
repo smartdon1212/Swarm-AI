@@ -1,115 +1,127 @@
 import React, { useState, useEffect } from 'react';
 import { Project, BoardMember } from './types';
 import AgentCard from './components/AgentCard';
-import ScoreGauge from './components/ScoreGauge';
-import MarkdownView from './components/MarkdownView';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Brain, 
-  Shield, 
-  HardDrive, 
-  Compass, 
-  Send, 
-  History, 
-  Sparkles, 
-  Cpu, 
-  PlusCircle, 
-  RefreshCw, 
-  Clock, 
-  AlertTriangle, 
-  TrendingUp, 
-  Eye, 
+import BoardDecisionMemoView from './components/BoardDecisionMemo';
+import BoardVotePanel from './components/BoardVotePanel';
+import { normalizeProject, getAgentContent, getAgentVote } from './lib/project';
+import {
+  Send,
+  History,
+  Sparkles,
+  RefreshCw,
+  AlertTriangle,
   Zap,
   Layers,
-  Sparkle
+  FileText,
+  Brain,
 } from 'lucide-react';
 
 const BOARD_MEMBERS: BoardMember[] = [
   {
-    id: "research",
-    name: "Dr. Evelyn Carter",
-    role: "Research Specialist",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&h=200&fit=crop",
-    credentials: "M.S. Wharton Economics, former McKinsey Feasibility Lead",
-    color: "sky",
-    borderColor: "border-sky-850",
-    accentColor: "text-sky-450 bg-sky-500/10"
+    id: 'market',
+    name: 'Dr. Evelyn Carter',
+    role: 'Market Intelligence Lead',
+    perspective: 'Market Analysis',
+    avatar: '',
+    credentials: 'Former McKinsey, Wharton Economics',
+    color: 'blue',
+    borderColor: 'border-blue-200',
+    accentColor: 'bg-blue-50 text-blue-600',
   },
   {
-    id: "critic",
-    name: "Julian Vance",
-    role: "Threat & Risk Auditor",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=200&h=200&fit=crop",
-    credentials: "Senior Risk Analyst at Vance Advisory, Tech Pessimist",
-    color: "rose",
-    borderColor: "border-rose-850",
-    accentColor: "text-rose-450 bg-rose-500/10"
+    id: 'risk',
+    name: 'Julian Vance',
+    role: 'Risk & Assumptions Auditor',
+    perspective: 'Risk Analysis',
+    avatar: '',
+    credentials: 'Senior Risk Analyst, Vance Advisory',
+    color: 'red',
+    borderColor: 'border-red-200',
+    accentColor: 'bg-red-50 text-red-600',
   },
   {
-    id: "engineer",
-    name: "Chief Architect Linus",
-    role: "Systems Architect",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&h=200&fit=crop",
-    credentials: "Former Platform Lead at AWS IoT, Linux Kernel Contributor",
-    color: "emerald",
-    borderColor: "border-emerald-850",
-    accentColor: "text-emerald-450 bg-emerald-500/10"
-  }
+    id: 'technical',
+    name: 'Chief Architect Linus',
+    role: 'Technical Feasibility Lead',
+    perspective: 'Technical Analysis',
+    avatar: '',
+    credentials: 'Former AWS Platform Lead',
+    color: 'emerald',
+    borderColor: 'border-emerald-200',
+    accentColor: 'bg-emerald-50 text-emerald-600',
+  },
+  {
+    id: 'strategic',
+    name: 'Sarah Okonkwo',
+    role: 'Strategy & GTM Director',
+    perspective: 'Strategic Analysis',
+    avatar: '',
+    credentials: 'Ex-Stripe, 3x startup advisor',
+    color: 'violet',
+    borderColor: 'border-violet-200',
+    accentColor: 'bg-violet-50 text-violet-600',
+  },
 ];
 
 const PRESET_TEMPLATES = [
   {
-    title: "EcoDrone Farmer Swarm",
-    desc: "Autonomous battery-powered drone fleets inspecting rural crops for diseases using client-side edge computer vision.",
-    prompt: "An autonomous crop monitoring swarm of field-patrolling solar-charged drones equipped with microedge computer vision cameras to identify corn and grain diseases without cellular connectivity."
+    title: 'EcoDrone Farmer Swarm',
+    desc: 'Autonomous drone fleets for crop disease detection with edge AI.',
+    prompt:
+      'An autonomous crop monitoring swarm of solar-charged drones with edge computer vision to identify corn and grain diseases without cellular connectivity.',
   },
   {
-    title: "P2P MicroGrid Exchange",
-    desc: "Decentralized modular neighborhood solar networks with dynamic algorithmic smart contract energy balancing.",
-    prompt: "A neighborhood peer-to-peer solar trading network where modular batteries and houses exchange electricity values using light weight local ledger smart contract algorithms based on live consumption rates."
+    title: 'P2P MicroGrid Exchange',
+    desc: 'Neighborhood solar trading with smart contract energy balancing.',
+    prompt:
+      'A neighborhood peer-to-peer solar trading network where modular batteries and houses exchange electricity using lightweight local ledger smart contracts.',
   },
   {
-    title: "ZKP Personal Medical Vault",
-    desc: "Self-custodian encrypted health archives allowing individuals to selectively license metadata to researchers.",
-    prompt: "A personal health record application utilizing zero-knowledge proofs (ZKP) and AES-256 local vaults to grant research institutions anonymous clinical study metadata while retaining full owner data rights."
-  }
+    title: 'ZKP Medical Vault',
+    desc: 'Self-custodian health records with selective research licensing.',
+    prompt:
+      'A personal health record app using zero-knowledge proofs and AES-256 local vaults to grant research institutions anonymous clinical metadata while retaining full owner data rights.',
+  },
 ];
+
+const LOADING_STEPS = [
+  'Convening the advisory board...',
+  'Market Analysis: evaluating demand and competition...',
+  'Risk Analysis: stress-testing assumptions...',
+  'Technical Analysis: assessing build feasibility...',
+  'Strategic Analysis: mapping go-to-market path...',
+  'Board Moderator: synthesizing decision memo...',
+];
+
+const RECOMMENDATION_COLORS: Record<string, string> = {
+  Proceed: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  'Proceed With Caution': 'text-amber-700 bg-amber-50 border-amber-200',
+  Pivot: 'text-blue-700 bg-blue-50 border-blue-200',
+  Reject: 'text-red-700 bg-red-50 border-red-200',
+};
 
 export default function App() {
   const [ideaInput, setIdeaInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [history, setHistory] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [activeProvider, setActiveProvider] = useState('gemini');
-  const [providerLabel, setProviderLabel] = useState('Gemini Provider Active');
-  const [activeTab, setActiveTab] = useState<'debate' | 'roadmap'>('debate');
+  const [providerLabel, setProviderLabel] = useState('Qwen Decision Engine');
+  const [keyConfigured, setKeyConfigured] = useState(true);
+  const [activeTab, setActiveTab] = useState<'perspectives' | 'memo'>('memo');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
 
-  // Cycling funny status logs during analysis Phase to make the board feel incredibly alive
-  const loadingSteps = [
-    "Board members taking their seats...",
-    "Dr. Evelyn Carter is gathering competitive market telemetry...",
-    "Julian Vance is compiling potential security vulnerability indices...",
-    "Chief Architect Linus is mapping conceptual relational database schemas...",
-    "Synthesizing argument clashes and debating viability parameters...",
-    "Executive Board Director is formulating the unified roadmap decree..."
-  ];
-
   useEffect(() => {
-    // Initial fetches
     fetchStatus();
-    fetchHistory(true); // default: auto-load latest project as active to avoid empty screens
+    fetchHistory(true);
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isAnalyzing) {
-      setLoadingStep(0);
-      interval = setInterval(() => {
-        setLoadingStep((prev) => (prev + 1) % loadingSteps.length);
-      }, 3500);
-    }
+    if (!isAnalyzing) return;
+    setLoadingStep(0);
+    const interval = setInterval(() => {
+      setLoadingStep((prev) => (prev + 1) % LOADING_STEPS.length);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isAnalyzing]);
 
@@ -118,11 +130,11 @@ export default function App() {
       const res = await fetch('/api/status');
       if (res.ok) {
         const data = await res.json();
-        setActiveProvider(data.activeProvider || "gemini");
-        setProviderLabel(data.providerLabel || "Gemini Provider Active");
+        setProviderLabel(data.providerLabel || 'Qwen Decision Engine');
+        setKeyConfigured(data.keyConfigured !== false);
       }
-    } catch (e) {
-      console.warn("Could not check active config parameters, dev sandbox running.");
+    } catch {
+      /* dev sandbox */
     }
   };
 
@@ -131,548 +143,380 @@ export default function App() {
       const res = await fetch('/api/history');
       if (res.ok) {
         const data = await res.json();
-        setHistory(data);
-        if (loadFirst && data.length > 0 && !activeProject) {
-          setActiveProject(data[0]);
+        const normalized = data.map((p: Record<string, unknown>) => normalizeProject(p));
+        setHistory(normalized);
+        if (loadFirst && normalized.length > 0 && !activeProject) {
+          setActiveProject(normalized[0]);
         }
       }
     } catch (e) {
-      console.error("Error retrieving historical boardroom deliberations", e);
+      console.error('Failed to load history', e);
     }
-  };
-
-  const handlePresetSelect = (promptText: string) => {
-    setIdeaInput(promptText);
-    setErrorMsg(null);
   };
 
   const executeAnalysis = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ideaInput.trim()) {
-      setErrorMsg("Please formulate an idea description before convening the boardroom.");
+      setErrorMsg('Describe your idea or decision before convening the board.');
       return;
     }
 
     setIsAnalyzing(true);
     setErrorMsg(null);
-    setActiveProject(null); // Clear previous active to show transition loading states
+    setActiveProject(null);
 
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ idea: ideaInput })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea: ideaInput }),
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Analyzing idea failed. Try again.");
+        throw new Error(errData.error || 'Analysis failed.');
       }
 
-      const analyzedProject = await res.json();
-      
-      // Update local state database
-      const reconstructed: Project = {
-        id: analyzedProject.saved_id,
-        idea: ideaInput,
-        createdAt: new Date().toISOString(),
-        research: analyzedProject.research,
-        critic: analyzedProject.critic,
-        engineer: analyzedProject.engineer,
-        strategist: analyzedProject.strategist,
-        score: analyzedProject.score,
-        final_plan: analyzedProject.final_plan
-      };
-
-      setActiveProject(reconstructed);
-      setActiveTab('debate'); // Always default to the debate tab so you see Evelyn, Julian, and Linus feedback clashing!
-      setIdeaInput(''); // Clear input for next
-      await fetchHistory(); // update the index
-
-    } catch (err: any) {
-      console.error("Boardroom process failed:", err);
-      setErrorMsg(err.message || "A secure server feedback channel timed out. Please try again.");
+      const data = await res.json();
+      const project = normalizeProject(data);
+      setActiveProject(project);
+      setActiveTab('memo');
+      setIdeaInput('');
+      await fetchHistory();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Analysis failed.';
+      setErrorMsg(message);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const selectProject = (proj: Project) => {
-    setActiveProject(proj);
-    setActiveTab('debate');
-    setErrorMsg(null);
-  };
-
-  const clearCurrent = () => {
-    setActiveProject(null);
-    setIdeaInput('');
-    setErrorMsg(null);
-  };
+  const recColor =
+    activeProject?.memo?.recommendation
+      ? RECOMMENDATION_COLORS[activeProject.memo.recommendation] ||
+        RECOMMENDATION_COLORS['Proceed With Caution']
+      : '';
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] font-sans text-[#E0E0E0] flex flex-col justify-between selection:bg-blue-500/20 selection:text-blue-300">
-      
-      {/* 1. Global Navigation Frame Header */}
-      <header className="border-b border-white/5 bg-[#0D0D0F]/90 sticky top-0 z-50 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          
-          {/* Logo & Branding */}
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
+      {/* Header */}
+      <header className="border-b border-slate-200 bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold shadow-inner">
-              <Cpu className="w-5 h-5 animate-pulse" />
+            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+              <Brain className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-baseline gap-2">
-                <h1 className="text-lg font-display font-extrabold tracking-[0.2em] text-blue-500 uppercase">
-                  SWARM
-                </h1>
-                <span className="text-[10px] text-slate-500 font-mono tracking-wider">
-                  by <strong className="font-semibold text-slate-400">SRASS</strong>
-                </span>
-              </div>
-              <p className="text-[9px] text-slate-400 tracking-wider font-mono uppercase mt-0.5">
-                Research • Critique • Engineer • Decide
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">
+                Swarm
+              </h1>
+              <p className="text-[11px] text-slate-500">
+                AI Decision Intelligence Platform
               </p>
             </div>
           </div>
 
-          {/* Engine Real-time Telemetry Stats */}
-          <div className="flex items-center gap-3 font-mono text-xs">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
-              activeProvider === 'qwen' && providerLabel.includes('Pending')
-                ? 'bg-amber-950/40 border-amber-500/20 text-amber-300'
-                : 'bg-blue-950/40 border-blue-500/20 text-blue-300'
-            }`}>
-              <span className={`w-2 h-2 rounded-full ${
-                activeProvider === 'qwen' && providerLabel.includes('Pending')
-                  ? 'bg-amber-500/80'
-                  : 'bg-blue-400 animate-pulse'
-              }`}></span>
-              <span>
-                Engine: <strong className="font-semibold">{providerLabel}</strong>
-              </span>
-            </div>
-            
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-800 bg-slate-900/40 text-slate-400">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
-              <span>Cwd: ./projects.db.json</span>
-            </div>
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${
+              keyConfigured
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-amber-50 border-amber-200 text-amber-700'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                keyConfigured ? 'bg-blue-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+            {providerLabel}
           </div>
-
         </div>
       </header>
 
-      {/* 2. Main Workspace Layout */}
       <main className="max-w-7xl mx-auto w-full px-4 py-6 flex-grow flex flex-col gap-6">
-
-        {/* Top Branding Section (Hackathon Ready) */}
-        <div className="bg-[#0D0D0F] border border-white/5 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md">
-          {/* Ambient subtle backdrop glow */}
-          <div className="absolute -left-12 -top-12 w-48 h-48 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
-          <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
-          
-          <div className="space-y-1.5 text-center md:text-left z-10">
-            <div className="flex items-center justify-center md:justify-start gap-3">
-              <span className="text-[10px] font-mono tracking-wider uppercase text-emerald-400 font-bold bg-emerald-950/45 border border-emerald-500/20 px-2 py-0.5 rounded">
-                HACKATHON BUILD
-              </span>
-              <span className="text-[10px] font-mono tracking-wider text-slate-500">
-                Built by <strong className="text-slate-400">SRASS</strong>
-              </span>
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-[0.25em] bg-gradient-to-r from-blue-400 via-indigo-200 to-teal-400 bg-clip-text text-transparent uppercase pt-1">
-              SWARM
-            </h1>
-            
-            <p className="text-sm md:text-base font-semibold text-slate-300 font-display tracking-wide uppercase">
-              Multi-Agent Innovation Boardroom
-            </p>
-            
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2.5 gap-y-1 text-xs text-slate-400 font-mono pt-1">
-              <span className="text-blue-400">Research</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-rose-400">Critique</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-amber-400">Engineer</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-400">Decide</span>
-            </div>
+        {/* Hero */}
+        <section className="bg-white border border-slate-200 rounded-xl p-6 md:p-8">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 mb-2">
+            Structured Boardroom Review
+          </p>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+            Validate decisions before you invest
+          </h2>
+          <p className="text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">
+            Submit an idea, startup, feature, or strategic question. Swarm orchestrates
+            expert perspectives, evaluates evidence, challenges assumptions, and delivers
+            a board-level decision memo — not a chatbot answer.
+          </p>
+          <div className="flex flex-wrap gap-2 mt-4 text-xs text-slate-500">
+            {['Market', 'Risk', 'Technical', 'Strategic', 'Board Moderator'].map(
+              (label, i) => (
+                <React.Fragment key={label}>
+                  {i > 0 && <span className="text-slate-300">→</span>}
+                  <span className="px-2 py-1 bg-slate-100 rounded font-medium text-slate-600">
+                    {label}
+                  </span>
+                </React.Fragment>
+              )
+            )}
           </div>
-          
-          {/* Subtle real-time metadata box */}
-          <div className="border border-white/5 bg-[#121214] rounded-lg p-4 font-mono text-xs text-slate-400 space-y-2.5 min-w-[250px] z-10 w-full md:w-auto">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-500">Engine Cluster:</span>
-              <span className="text-emerald-400 font-semibold uppercase">Active</span>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
-              <span className="text-slate-500">Board Dialectics:</span>
-              <span className="text-slate-300">Asynchronous</span>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
-              <span className="text-slate-500">Orchestration:</span>
-              <span className="text-indigo-400 font-semibold uppercase">{activeProvider === 'qwen' ? 'Qwen Swarm' : 'Gemini Swarm'}</span>
-            </div>
-          </div>
-        </div>
+        </section>
 
-        {/* The Grid Workspace */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        
-        {/* LEFT COLUMN/SIDEBAR - SUBMISSION PANEL & DYNAMIC SEED TEMPLATES */}
-        <div className="lg:col-span-1 flex flex-col gap-6">          {/* A. Submit Project Area */}
-          <section className="bg-slate-900/30 border border-slate-900 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold tracking-wide text-slate-300 uppercase font-mono flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-teal-400" />
-                Idea Incubator
+          {/* Sidebar */}
+          <div className="lg:col-span-1 flex flex-col gap-5">
+            <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+                Submit for Review
               </h2>
-              {activeProject && (
-                <button 
-                  onClick={clearCurrent}
-                  className="text-[10px] px-2 py-0.5 font-semibold text-white/50 hover:text-white border border-white/10 rounded bg-white/5 hover:bg-white/10 transition"
-                >
-                  [Reset Input]
-                </button>
-              )}
-            </div>
 
-            <form onSubmit={executeAnalysis} className="space-y-4">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1 font-mono">Formulate Innovation Pitch:</label>
+              <form onSubmit={executeAnalysis} className="space-y-4">
                 <textarea
-                  id="idea_textarea"
                   value={ideaInput}
                   onChange={(e) => {
                     setIdeaInput(e.target.value);
                     if (errorMsg) setErrorMsg(null);
                   }}
                   disabled={isAnalyzing}
-                  placeholder="Describe your start-up or technology idea in detail. Detail the purpose, mechanics, and vision..."
-                  className="w-full h-36 bg-[#161618] border border-white/10 rounded p-3 text-sm text-blue-100 placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/10 disabled:opacity-40 custom-scrollbar resize-none"
+                  placeholder="Describe your startup idea, product feature, business decision, or strategic question..."
+                  className="w-full h-36 bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50 resize-none"
                 />
-              </div>
 
-              {errorMsg && (
-                <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-500/20 rounded-lg p-3 text-rose-450 text-xs">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              <button
-                id="btn_submit_idea"
-                type="submit"
-                disabled={isAnalyzing || !ideaInput.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 rounded text-xs uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(59,130,246,0.15)]"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Board Debating...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Convene Boardroom
-                  </>
+                {errorMsg && (
+                  <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-red-700 text-xs">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    {errorMsg}
+                  </div>
                 )}
-              </button>
-            </form>
-          </section>
 
-          {/* B. Suggested Templates Grid */}
-          <section className="bg-[#0D0D0F] border border-white/5 rounded-lg p-5 shadow-sm">
-            <h2 className="text-xs font-semibold tracking-wide text-slate-300 uppercase font-mono mb-3.5 flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-emerald-400" />
-              Quick-Start Templates
-            </h2>
-            <div className="space-y-3">
-              {PRESET_TEMPLATES.map((item, id) => (
                 <button
-                  key={id}
-                  type="button"
-                  onClick={() => handlePresetSelect(item.prompt)}
-                  disabled={isAnalyzing}
-                  className="w-full text-left p-3 rounded border border-white/5 bg-[#161618]/60 sidebar-item-style hover:bg-white/5 transition flex flex-col gap-1 cursor-pointer"
+                  type="submit"
+                  disabled={isAnalyzing || !ideaInput.trim()}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <p className="text-xs font-bold text-slate-200 flex items-center gap-1.5 font-display">
-                    {item.title}
-                  </p>
-                  <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                    {item.desc}
-                  </p>
+                  {isAnalyzing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Board in Session...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Convene Board
+                    </>
+                  )}
                 </button>
-              ))}
-            </div>
-          </section>
+              </form>
+            </section>
 
-          {/* C. History Indices list */}
-          <section className="bg-[#0D0D0F] border border-white/5 rounded-lg p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold tracking-wide text-slate-300 uppercase font-mono flex items-center gap-1.5">
-                <History className="w-4 h-4 text-sky-400" />
-                Boardroom Archives
+            <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-blue-500" />
+                Demo Templates
               </h2>
-              <span className="text-[10px] font-mono text-slate-500">{history.length} Saved</span>
-            </div>
+              <div className="space-y-2">
+                {PRESET_TEMPLATES.map((item) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => {
+                      setIdeaInput(item.prompt);
+                      setErrorMsg(null);
+                    }}
+                    disabled={isAnalyzing}
+                    className="w-full text-left p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition text-sm"
+                  >
+                    <p className="font-medium text-slate-800">{item.title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                      {item.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </section>
 
-            <div className="space-y-2 max-h-[190px] overflow-y-auto custom-scrollbar pr-1">
-              {history.length === 0 ? (
-                <p className="text-xs text-slate-500 italic text-center py-4">No archives saved yet.</p>
-              ) : (
-                history.map((proj) => {
-                  const isActive = activeProject?.id === proj.id;
-                  return (
+            <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <History className="w-4 h-4 text-blue-500" />
+                  Review History
+                </h2>
+                <span className="text-[10px] text-slate-400">{history.length}</span>
+              </div>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                {history.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-4">
+                    No reviews yet
+                  </p>
+                ) : (
+                  history.map((proj) => (
                     <button
                       key={proj.id}
-                      onClick={() => selectProject(proj)}
-                      className={`w-full text-left p-3 rounded border transition flex items-center justify-between gap-2.5 cursor-pointer sidebar-item-style ${
-                        isActive 
-                        ? 'bg-white/5 border-l-2 !border-l-blue-500 border-white/10' 
-                        : 'border-white/5 bg-transparent hover:border-white/10'
+                      onClick={() => {
+                        setActiveProject(proj);
+                        setActiveTab('memo');
+                        setErrorMsg(null);
+                      }}
+                      className={`w-full text-left p-3 rounded-lg border transition text-sm ${
+                        activeProject?.id === proj.id
+                          ? 'border-blue-300 bg-blue-50'
+                          : 'border-slate-100 hover:border-slate-200'
                       }`}
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold truncate ${isActive ? 'text-blue-400' : 'text-slate-200'}`}>
-                          {proj.idea}
-                        </p>
-                        <span className="text-[9px] text-white/30 font-mono mt-0.5 block">
+                      <p className="font-medium text-slate-800 truncate text-xs">
+                        {proj.idea}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-slate-400">
                           {new Date(proj.createdAt).toLocaleDateString()}
                         </span>
+                        <span className="text-[10px] font-semibold text-blue-600">
+                          {proj.memo?.recommendation || '—'}
+                        </span>
                       </div>
-                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                        proj.score >= 80 ? 'text-emerald-400 bg-emerald-500/10' :
-                        proj.score >= 60 ? 'text-amber-400 bg-amber-500/10' :
-                        'text-rose-400 bg-rose-500/10'
-                      }`}>
-                        {proj.score}%
-                      </span>
                     </button>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-        </div>
-
-        {/* RIGHT AREA - MAIN DELIBERATION GRID & CONFLICT VIEWER (lg:col-span-3) */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          
-          {/* Active Deliberation Objective Header */}
-          <section className="bg-[#0D0D0F] border border-white/5 rounded-lg p-5 shadow-sm">
-            {isAnalyzing ? (
-              <div className="flex flex-col md:flex-row items-center gap-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-amber-955/40 border border-amber-500/20 flex items-center justify-center text-amber-500 animate-spin">
-                  <RefreshCw className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Sparkle className="w-4 h-4 animate-pulse" />
-                    Boardroom Convened
-                  </h3>
-                  <p className="text-sm text-slate-200 mt-1 max-w-xl transition-all duration-500">
-                    &ldquo;{loadingSteps[loadingStep]}&rdquo;
-                  </p>
-                </div>
-              </div>
-            ) : activeProject ? (
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-mono tracking-wider uppercase text-blue-400 font-bold bg-blue-950/40 border border-blue-500/20 px-2 py-0.5 rounded-full inline-block mb-2">
-                    Active Deliberation
-                  </span>
-                  <h2 className="text-lg md:text-xl font-display font-bold text-white tracking-tight leading-snug">
-                    {activeProject.idea}
-                  </h2>
-                  <p className="text-[10px] text-slate-500 font-mono mt-1">
-                    BOARD DEBATED ID: {activeProject.id} • RESOLVED AT: {new Date(activeProject.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                
-                {/* Score badge indicator */}
-                <div className="flex items-center gap-3">
-                  <div className="text-center md:text-right">
-                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono block">Feasibility Rating</span>
-                    <strong className={`text-3xl font-mono font-bold block mt-0.5 score-glow-text ${
-                      activeProject.score >= 80 ? 'text-emerald-400' :
-                      activeProject.score >= 60 ? 'text-amber-400' :
-                      'text-rose-450'
-                    }`}>
-                      {activeProject.score}<span className="text-xs text-slate-500">%</span>
-                    </strong>
-                  </div>
-                  <div className={`w-12 h-12 rounded-lg border flex items-center justify-center ${
-                    activeProject.score >= 80 ? 'bg-emerald-955/45 border-emerald-500/30 text-emerald-400' :
-                    activeProject.score >= 60 ? 'bg-amber-955/45 border-amber-500/30 text-amber-400' :
-                    'bg-rose-955/45 border-rose-500/20 text-rose-450'
-                  }`}>
-                    <TrendingUp className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 rounded-full border border-slate-800 bg-slate-900/40 flex items-center justify-center mx-auto mb-4 text-slate-500">
-                  <Brain className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-200 font-display">AI Innovation Boardroom Vacant</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                  The boardroom handles complex startup evaluation. Enter a business model or technology idea to compile research, criticisms, and architecture.
-                </p>
-              </div>
-            )}
-          </section>
-
-          {activeProject && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Tab Toggles */}
-              <div className="border-b border-white/5 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setActiveTab('debate')}
-                    className={`pb-3 px-4 text-xs font-mono font-bold border-b-2 tracking-wider uppercase transition flex items-center gap-2 cursor-pointer ${
-                      activeTab === 'debate' 
-                      ? 'border-blue-500 text-blue-400' 
-                      : 'border-transparent text-white/40 hover:text-white/80'
-                    }`}
-                  >
-                    <Layers className="w-3.5 h-3.5" />
-                    Boardroom Dialectics
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('roadmap')}
-                    className={`pb-3 px-4 text-xs font-mono font-bold border-b-2 tracking-wider uppercase transition flex items-center gap-2 cursor-pointer ${
-                      activeTab === 'roadmap' 
-                      ? 'border-blue-500 text-blue-400' 
-                      : 'border-transparent text-white/40 hover:text-white/80'
-                    }`}
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    Strategist Execution Board
-                  </button>
-                </div>
-                
-                <span className="text-[10px] font-mono text-slate-500 tracking-wide uppercase px-2 py-0.5 rounded bg-slate-900/70 border border-slate-900 hidden sm:inline-block">
-                  Parallel Agent Swarm Action Execution Active
-                </span>
-              </div>
-
-              {/* TABCONTENT AREA */}
-              <AnimatePresence mode="wait">
-                {activeTab === 'debate' ? (
-                  <motion.div
-                    key="debate-tab"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-6"
-                  >
-                    {/* Research Card */}
-                    <div className="md:col-span-1">
-                      <AgentCard
-                        member={BOARD_MEMBERS[0]}
-                        content={activeProject.research}
-                        isAnalyzing={isAnalyzing}
-                        status={isAnalyzing ? 'thinking' : 'completed'}
-                      />
-                    </div>
-                    {/* Critic Card */}
-                    <div className="md:col-span-1">
-                      <AgentCard
-                        member={BOARD_MEMBERS[1]}
-                        content={activeProject.critic}
-                        isAnalyzing={isAnalyzing}
-                        status={isAnalyzing ? 'thinking' : 'completed'}
-                      />
-                    </div>
-                    {/* Engineer Card */}
-                    <div className="md:col-span-1">
-                      <AgentCard
-                        member={BOARD_MEMBERS[2]}
-                        content={activeProject.engineer}
-                        isAnalyzing={isAnalyzing}
-                        status={isAnalyzing ? 'thinking' : 'completed'}
-                      />
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="roadmap-tab"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="space-y-6"
-                  >
-                    {/* Viability Rating */}
-                    <ScoreGauge score={activeProject.score} />
-
-                    {/* Synthesized Roadmap Plan */}
-                    <div className="bg-[#0D0D0F] border border-white/10 rounded-lg p-6 shadow-lg flex flex-col gap-5 relative">
-                      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-lg bg-gradient-to-r from-violet-500 to-blue-500" />
-                      
-                      {/* Synthesizer Persona header */}
-                      <div className="flex items-center gap-3.5 pb-4 border-b border-slate-800/60">
-                        <img
-                          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&h=200&fit=crop"
-                          alt="Strategist AI"
-                          className="w-12 h-12 rounded-full object-cover border-2 border-slate-800 flex-shrink-0"
-                        />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-800 flex items-center gap-1">
-                              <Compass className="w-3.5 h-3.5 text-amber-500" />
-                               Consensus Director Swarm AI
-                            </span>
-                          </div>
-                          <h3 className="text-sm font-bold text-white mt-1">Concurrence Opinion & Strategy Plan</h3>
-                          <p className="text-[10px] text-slate-500 font-mono mt-0.5 leading-snug">
-                            Synthesizing research telemetry, counter-acting vulnerability indices, and scaling deployment schematics.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="p-4 rounded-lg bg-indigo-950/20 border border-indigo-950/70">
-                          <h4 className="text-xs font-mono font-semibold tracking-wider uppercase text-indigo-300 mb-1.5">Debate Resolution Opinion:</h4>
-                          <p className="text-sm text-slate-300 leading-relaxed italic">
-                            &ldquo;{activeProject.strategist}&rdquo;
-                          </p>
-                        </div>
-                        
-                        <div className="mt-2 text-slate-200">
-                          <MarkdownView content={activeProject.final_plan} />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                  ))
                 )}
-              </AnimatePresence>
+              </div>
+            </section>
+          </div>
 
-            </div>
-          )}
+          {/* Main content */}
+          <div className="lg:col-span-3 flex flex-col gap-5">
+            <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              {isAnalyzing ? (
+                <div className="flex items-center gap-4 py-4">
+                  <RefreshCw className="w-8 h-8 text-blue-500 animate-spin flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Board in Session
+                    </p>
+                    <p className="text-sm text-slate-500 mt-0.5 transition-all">
+                      {LOADING_STEPS[loadingStep]}
+                    </p>
+                  </div>
+                </div>
+              ) : activeProject ? (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 mb-1">
+                      Active Review
+                    </p>
+                    <h2 className="text-lg font-semibold text-slate-900 leading-snug">
+                      {activeProject.idea}
+                    </h2>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {new Date(activeProject.createdAt).toLocaleString()} ·{' '}
+                      {activeProject.id}
+                    </p>
+                  </div>
+                  {activeProject.memo && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          Confidence
+                        </p>
+                        <p className="text-2xl font-bold text-slate-900">
+                          {activeProject.memo.confidenceScore}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-sm font-semibold px-3 py-2 rounded-lg border ${recColor}`}
+                      >
+                        {activeProject.memo.recommendation}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <Brain className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-slate-700">
+                    No active review
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                    Submit an idea or select a demo template to receive a structured
+                    board decision memo.
+                  </p>
+                </div>
+              )}
+            </section>
 
+            {activeProject && (
+              <>
+                <div className="border-b border-slate-200 flex gap-1">
+                  <button
+                    onClick={() => setActiveTab('memo')}
+                    className={`pb-3 px-4 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
+                      activeTab === 'memo'
+                        ? 'border-blue-600 text-blue-700'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Board Decision Memo
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('perspectives')}
+                    className={`pb-3 px-4 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
+                      activeTab === 'perspectives'
+                        ? 'border-blue-600 text-blue-700'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    Expert Perspectives
+                  </button>
+                </div>
+
+                {activeTab === 'memo' ? (
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                    <div className="xl:col-span-2">
+                      {activeProject.memo ? (
+                        <BoardDecisionMemoView memo={activeProject.memo} />
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          No decision memo available for this review.
+                        </p>
+                      )}
+                    </div>
+                    <div className="xl:col-span-1">
+                      {activeProject.votes && (
+                        <BoardVotePanel votes={activeProject.votes} />
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {BOARD_MEMBERS.filter((m) => m.id !== 'moderator').map((member) => (
+                      <AgentCard
+                        key={member.id}
+                        member={member}
+                        content={getAgentContent(
+                          activeProject,
+                          member.id as 'market' | 'risk' | 'technical' | 'strategic'
+                        )}
+                        vote={getAgentVote(
+                          activeProject,
+                          member.id as 'market' | 'risk' | 'technical' | 'strategic'
+                        )}
+                        isAnalyzing={false}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-
-      </div>
-
       </main>
 
-      {/* 3. Global Footer */}
-      <footer className="border-t border-white/5 bg-[#0D0D0F] py-5 mt-12 text-center text-xs text-slate-500 font-mono">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>SWARM • Built by SRASS</span>
-          <span className="text-slate-600 font-semibold">Powered by {activeProvider === 'qwen' ? 'Qwen Swarm' : 'Gemini Swarm'} Multi-Agent Engine</span>
+      <footer className="border-t border-slate-200 bg-white py-4 mt-8">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+          <span>Swarm — AI Decision Intelligence Platform</span>
+          <span>Powered by Qwen · Structured decision framework</span>
         </div>
       </footer>
-
     </div>
   );
 }

@@ -413,16 +413,8 @@ export default function App() {
                   &larr; Exit to Home
                 </button>
 
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded border ${
-                  activeProvider === 'qwen' && providerLabel.includes('Pending')
-                    ? 'bg-amber-950/40 border-amber-500/20 text-amber-300'
-                    : 'bg-blue-950/40 border-blue-500/20 text-blue-300'
-                }`}>
-                  <span className={`w-2 h-2 rounded-full ${
-                    activeProvider === 'qwen' && providerLabel.includes('Pending')
-                      ? 'bg-amber-500/80'
-                      : 'bg-blue-400 animate-pulse'
-                  }`}></span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border bg-blue-950/40 border-blue-500/20 text-blue-300">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
                   <span>
                     Engine: <strong className="font-semibold">{providerLabel}</strong>
                   </span>
@@ -506,7 +498,7 @@ export default function App() {
             </div>
             <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
               <span className="text-slate-500">Orchestration:</span>
-              <span className="text-indigo-400 font-semibold uppercase font-bold">{activeProvider === 'qwen' ? 'Qwen Swarm' : 'Gemini Swarm'}</span>
+              <span className="text-indigo-400 font-semibold uppercase font-bold">Gemini Swarm</span>
             </div>
           </div>
         </div>
@@ -870,7 +862,7 @@ export default function App() {
       <footer className="border-t border-white/5 bg-[#0D0D0F] py-5 mt-12 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>SWARM • Built by SRASS</span>
-          <span className="text-slate-600 font-semibold">Powered by {activeProvider === 'qwen' ? 'Qwen Swarm' : 'Gemini Swarm'} Multi-Agent Engine</span>
+          <span className="text-slate-600 font-semibold">Powered by Gemini Swarm Multi-Agent Engine</span>
         </div>
       </footer>
         </>

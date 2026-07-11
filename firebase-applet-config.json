@@ -1,10 +1,10 @@
 {
-  "projectId": "animated-partition-218qq",
-  "appId": "1:888136107109:web:815945e7ac46de494e328c",
-  "apiKey": "AIzaSyAYq7cs98rJM66OW57SbXLPxBzSa1qBfYk",
-  "authDomain": "animated-partition-218qq.firebaseapp.com",
+  "projectId": "gen-lang-client-0122993029",
+  "appId": "1:16548544642:web:da2f5c7292a8f773ee749b",
+  "apiKey": "AIzaSyB_lKJeUffTA2BMsQmQqeKwPgYVmc-Kp3E",
+  "authDomain": "gen-lang-client-0122993029.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-1708d974-98b0-4bf1-9c97-6c2af5daf428",
-  "storageBucket": "animated-partition-218qq.firebasestorage.app",
-  "messagingSenderId": "888136107109",
-  "measurementId": ""
+  "storageBucket": "gen-lang-client-0122993029.firebasestorage.app",
+  "messagingSenderId": "16548544642",
+  "measurementId": "G-1TS8C5GX5C"
 }

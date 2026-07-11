@@ -1,5 +1,8 @@
 {
-  "name": "Swarm - AI Decision Intelligence Platform",
-  "description": "Multi-perspective AI boardroom that evaluates ideas through Market, Risk, Technical, and Strategic analysis — producing structured decision memos with board voting.",
-  "requestFramePermissions": []
+  "name": "SRASS Swarm - AI Innovation Boardroom System",
+  "description": "Multi-agent AI boardroom simulation simulating Research, Critic, Engineer, and Strategist agents debating and analyzing user ideas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

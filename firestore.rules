@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Default fallback gate denying all unauthorized ingress entries
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions for Attribute-Based Access Control (ABAC)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Secure workspace matching user isolation credentials
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      
+      match /projects/{projectId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(projectId);
+      }
+    }
+
+    // Secure survey submissions
+    match /surveys/{surveyId} {
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid 
+        && isValidId(surveyId);
+      
+      allow read, update, delete: if isSignedIn() 
+        && resource.data.userId == request.auth.uid 
+        && isValidId(surveyId);
+    }
+  }
+}

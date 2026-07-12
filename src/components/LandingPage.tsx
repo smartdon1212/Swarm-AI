@@ -11,8 +11,10 @@ import {
   Code2, 
   Layers, 
   Lightbulb, 
-  Target 
+  Target,
+  Download
 } from "lucide-react";
+import swarmLogo from "../assets/images/swarm_logo_1783875160230.jpg";
 
 interface LandingPageProps {
   onStart: () => void;
@@ -43,6 +45,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400 font-mono mb-8 animate-fade-in">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
             <span>AI innovation boardroom active</span>
+          </div>
+
+          {/* Logo */}
+          <div className="group relative w-24 h-24 rounded-2xl overflow-hidden border border-white/10 shadow-2xl mb-2 shadow-blue-500/15 hover:scale-105 transition-all duration-300">
+            <img 
+              src={swarmLogo} 
+              alt="Swarm AI Logo" 
+              className="w-full h-full object-cover transition-transform group-hover:scale-110"
+              referrerPolicy="no-referrer"
+            />
+            <a 
+              href={swarmLogo} 
+              download="swarm_ai_logo.jpg"
+              title="Download Logo"
+              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-xs text-white transition-opacity duration-200 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>Save</span>
+            </a>
+          </div>
+          
+          {/* Logo download link */}
+          <div className="mb-6">
+            <a 
+              href={swarmLogo} 
+              download="swarm_ai_logo.jpg"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-450 hover:text-blue-400 font-mono transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download Swarm AI Logo Asset</span>
+            </a>
           </div>
 
           {/* Title */}

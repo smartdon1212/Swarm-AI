@@ -150,6 +150,20 @@ To counter the **Critic's** major liability arguments:
     ];
   }
 
+  private readAllRawProjects(): Project[] {
+    try {
+      if (!fs.existsSync(DB_FILE)) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(this.getSeedProjects(), null, 2), "utf-8");
+      }
+      const data = fs.readFileSync(DB_FILE, "utf-8");
+      const list = JSON.parse(data);
+      return Array.isArray(list) ? list : [];
+    } catch (error) {
+      console.error("[LocalJSONDatabase] Error reading raw database:", error);
+      return [];
+    }
+  }
+
   async initialize(): Promise<void> {
     try {
       if (!fs.existsSync(DB_FILE)) {
@@ -162,18 +176,17 @@ To counter the **Critic's** major liability arguments:
 
   async getProjects(userId?: string): Promise<Project[]> {
     try {
-      if (!fs.existsSync(DB_FILE)) {
-        await this.initialize();
-      }
-      const data = fs.readFileSync(DB_FILE, "utf-8");
-      const list: Project[] = JSON.parse(data);
-      const parsed = Array.isArray(list) ? list : [];
-      
-      // Filter projects by user ID if requested (and always include global seeds if they don't have a userId or have the guest ID)
-      if (userId && userId !== "") {
-        return parsed.filter(p => !p.userId || p.userId === userId || p.userId === "mock-guest-uid");
-      }
-      return parsed;
+      const parsed = this.readAllRawProjects();
+      const normalizedUserId = userId && userId !== "null" && userId !== "undefined" && userId !== "" ? userId : "mock-guest-uid";
+
+      return parsed.filter(p => {
+        // Always include global seed projects for all users
+        const isSeed = p.id.startsWith("proj_seed_");
+        if (isSeed) return true;
+
+        // Otherwise, only return projects belonging strictly to this user
+        return p.userId === normalizedUserId;
+      });
     } catch (error) {
       console.error("[LocalJSONDatabase] Error reading database:", error);
       return [];
@@ -187,10 +200,9 @@ To counter the **Critic's** major liability arguments:
 
   async saveProject(project: Project, userId?: string): Promise<void> {
     try {
-      const list = await this.getProjects();
-      if (userId) {
-        project.userId = userId;
-      }
+      const list = this.readAllRawProjects();
+      const normalizedUserId = userId && userId !== "null" && userId !== "undefined" && userId !== "" ? userId : "mock-guest-uid";
+      project.userId = normalizedUserId;
       list.push(project);
       fs.writeFileSync(DB_FILE, JSON.stringify(list, null, 2), "utf-8");
     } catch (error) {
@@ -521,7 +533,7 @@ function extractIdeaFromPrompt(prompt: string): string {
 
 // AI Provider Abstraction Interface
 export interface AIProvider {
-  generate(prompt: string): Promise<string>;
+  generate(prompt: string, modelOverride?: string): Promise<string>;
 }
 
 // Gemini active provider using the official @google/genai SDK with exponential backoff and model auto-fallback
@@ -545,17 +557,18 @@ class GeminiProvider implements AIProvider {
     this.model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
   }
 
-  async generate(prompt: string): Promise<string> {
-    const modelsToTry = [this.model];
+  async generate(prompt: string, modelOverride?: string): Promise<string> {
+    const activeModel = modelOverride || this.model;
+    const modelsToTry = [activeModel];
     
     // Auto-fallback chain: include multiple models for maximum resilience
-    if (this.model === "gemini-3.1-flash-lite") {
+    if (activeModel === "gemini-3.1-flash-lite") {
       modelsToTry.push("gemini-3.5-flash");
       modelsToTry.push("gemini-flash-latest");
-    } else if (this.model === "gemini-3.5-flash") {
+    } else if (activeModel === "gemini-3.5-flash") {
       modelsToTry.push("gemini-3.1-flash-lite");
       modelsToTry.push("gemini-flash-latest");
-    } else if (this.model === "gemini-flash-latest") {
+    } else if (activeModel === "gemini-flash-latest") {
       modelsToTry.push("gemini-3.5-flash");
       modelsToTry.push("gemini-3.1-flash-lite");
     } else {
@@ -816,6 +829,9 @@ Your job is NOT to be helpful. Your job is to be accurate and reality-bound.
 TASK:
 Analyze the idea and expose real-world context, constraints, and existing solutions.
 
+SPEED & CONCISENESS RULE:
+Be extremely concise, clear, and direct. Do NOT use conversational filler, long preambles, introductory statements, or summary paragraphs. Focus 100% on high-density, scannable information.
+
 RULES:
 - Focus on real-world feasibility and known systems
 - Identify similar existing technologies or products
@@ -840,6 +856,9 @@ User Idea: "${trimmedIdea}"`;
     const criticPrompt = `You are the Critic Agent in a multi-agent innovation boardroom.
 
 Your role is to aggressively challenge the idea and expose failure points.
+
+SPEED & CONCISENESS RULE:
+Be extremely brief, direct, and critical. Avoid all introductory chatter, preambles, and polite transitions. State your points immediately in a crisp, punchy format.
 
 RULES:
 - Assume the idea will fail unless proven otherwise
@@ -873,6 +892,9 @@ User Idea: "${trimmedIdea}"`;
 
 Your role is to design a realistic, buildable technical solution.
 
+SPEED & CONCISENESS RULE:
+Be highly structured, practical, and brief. Avoid any hand-waving or unnecessary descriptions. Do NOT write preambles or introductory text. Maintain direct, brief blueprints.
+
 RULES:
 - Stay grounded in real engineering constraints
 - Prefer simple, scalable architectures
@@ -902,9 +924,9 @@ User Idea: "${trimmedIdea}"`;
 
     console.log(`Polling Gemini API for individual agent perspectives in parallel...`);
     const [researchStr, criticStr, engineerStr] = await Promise.all([
-      provider.generate(researchPrompt),
-      provider.generate(criticPrompt),
-      provider.generate(engineerPrompt)
+      provider.generate(researchPrompt, "gemini-3.1-flash-lite"),
+      provider.generate(criticPrompt, "gemini-3.1-flash-lite"),
+      provider.generate(engineerPrompt, "gemini-3.1-flash-lite")
     ]);
 
     console.log("Drafting Strategist synthesis using Research, Critic, and Engineer feedback...");
@@ -929,6 +951,9 @@ ${criticStr}
 
 Lead Systems Engineer Blueprint:
 ${engineerStr}
+
+SPEED & CONCISENESS RULE:
+Be extremely concise, realistic, and direct in your strategic analysis. Do NOT include preambles, introductory filler, or generic conversational statements inside the JSON values. Focus 100% on high-value, crisp strategic decisions and roadmaps to ensure low latency.
 
 RULES:
 - Do NOT be neutral

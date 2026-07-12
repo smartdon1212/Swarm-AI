@@ -7,6 +7,7 @@ import { LandingPage } from './components/LandingPage';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
+import swarmLogo from "./assets/images/swarm_logo_1783875160230.jpg";
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
@@ -29,7 +30,11 @@ import {
   Eye, 
   Zap,
   Layers,
-  Sparkle
+  Sparkle,
+  Copy,
+  Check,
+  ExternalLink,
+  Download
 } from 'lucide-react';
 
 const BOARD_MEMBERS: BoardMember[] = [
@@ -83,6 +88,35 @@ const PRESET_TEMPLATES = [
   }
 ];
 
+function formatAuthError(err: any): string {
+  const code = err?.code || "";
+  const msg = err?.message || "";
+  
+  if (code === 'auth/invalid-credential' || msg.includes('invalid-credential')) {
+    return "Invalid email or password. Please verify your credentials and try again. If you don't have an account yet, click 'Don't have an account? Sign up' below!";
+  }
+  if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) {
+    return "This email address is already in use. Please sign in instead.";
+  }
+  if (code === 'auth/weak-password' || msg.includes('weak-password')) {
+    return "Password is too weak. It must be at least 6 characters long.";
+  }
+  if (code === 'auth/invalid-email' || msg.includes('invalid-email')) {
+    return "Please enter a valid email address.";
+  }
+  if (code === 'auth/user-not-found' || msg.includes('user-not-found')) {
+    return "No account found with this email. Please sign up first.";
+  }
+  if (code === 'auth/wrong-password' || msg.includes('wrong-password')) {
+    return "Incorrect password. Please try again.";
+  }
+  if (code === 'auth/too-many-requests' || msg.includes('too-many-requests')) {
+    return "Too many failed login attempts. This account has been temporarily disabled. Please try again later.";
+  }
+  
+  return msg || "An unexpected authentication error occurred.";
+}
+
 export default function App() {
   const [ideaInput, setIdeaInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -106,6 +140,7 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [copiedHost, setCopiedHost] = useState(false);
 
   // Cycling funny status logs during analysis Phase to make the board feel incredibly alive
   const loadingSteps = [
@@ -248,7 +283,12 @@ export default function App() {
 
     } catch (err: any) {
       console.error("Boardroom process failed:", err);
-      setErrorMsg(err.message || "A secure server feedback channel timed out. Please try again.");
+      const msg = err?.message || "";
+      if (msg.includes("Failed to fetch") || msg.includes("fetch")) {
+        setErrorMsg("The server connection was temporarily interrupted or timed out. This can happen if the application server was restarting during your request. Please wait a moment and click 'Convene Boardroom' again!");
+      } else {
+        setErrorMsg(msg || "A secure server feedback channel timed out. Please try again.");
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -298,7 +338,7 @@ export default function App() {
         })
         .catch((err: any) => {
           console.error(err);
-          setAuthError(err.message || "Failed to register account.");
+          setAuthError(formatAuthError(err));
           setAuthLoading(false);
         });
     } else {
@@ -321,7 +361,7 @@ export default function App() {
         })
         .catch((err: any) => {
           console.error(err);
-          setAuthError(err.message || "Incorrect email or password.");
+          setAuthError(formatAuthError(err));
           setAuthLoading(false);
         });
     }
@@ -347,7 +387,13 @@ export default function App() {
       })
       .catch((err: any) => {
         console.error("Google Auth failed:", err);
-        setAuthError(err.message || "Failed to sign in with Google.");
+        if (err.code === "auth/unauthorized-domain" || String(err.message || "").includes("unauthorized-domain")) {
+          setAuthError(
+            "This domain is not authorized in your Firebase console. To fix this: 1. Go to Firebase Console > Authentication > Settings > Authorized Domains. 2. Add your AI Studio preview domain to the whitelist. Or, simply use the Email & Password section below, which requires no domain whitelist!"
+          );
+        } else {
+          setAuthError(err.message || "Failed to sign in with Google.");
+        }
         setAuthLoading(false);
       });
   };
@@ -385,8 +431,13 @@ export default function App() {
               
               {/* Logo & Branding */}
               <div className="flex items-center gap-3">
-                <div onClick={() => setShowDashboard(false)} className="w-9 h-9 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold shadow-inner cursor-pointer hover:bg-teal-500/20 transition-all">
-                  <Cpu className="w-5 h-5 animate-pulse" />
+                <div onClick={() => setShowDashboard(false)} className="w-9 h-9 rounded-lg overflow-hidden border border-white/10 shadow-inner cursor-pointer hover:scale-105 transition-all">
+                  <img 
+                    src={swarmLogo} 
+                    alt="Swarm AI Logo" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2">
@@ -460,27 +511,46 @@ export default function App() {
           <div className="absolute -left-12 -top-12 w-48 h-48 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
           <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
           
-          <div className="space-y-1.5 text-center md:text-left z-10 w-full md:max-w-xl">
-            <div className="flex items-center justify-center md:justify-start gap-3">
-              <span className="text-[10px] font-mono tracking-widest uppercase text-teal-400 font-bold bg-teal-950/45 border border-teal-500/20 px-2.5 py-0.5 rounded">
-                STARTUP VALIDATION STUDIO
-              </span>
-              <span className="text-[10px] font-mono tracking-wider text-slate-550">
-                Enterprise Edition
-              </span>
+          <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full md:max-w-xl">
+            <div className="group relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 shadow-lg flex-shrink-0">
+              <img 
+                src={swarmLogo} 
+                alt="Swarm AI Logo" 
+                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <a 
+                href={swarmLogo} 
+                download="swarm_ai_logo.jpg"
+                title="Download Logo"
+                className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white transition-opacity duration-200 cursor-pointer font-mono"
+              >
+                <Download className="w-3.5 h-3.5 mb-0.5" />
+                <span>Save</span>
+              </a>
             </div>
-            
-            <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-[0.25em] bg-gradient-to-r from-blue-400 via-indigo-200 to-teal-400 bg-clip-text text-transparent uppercase pt-1">
-              SWARM
-            </h1>
-            
-            <p className="text-base font-semibold text-[#E0E0E0] font-sans tracking-wide uppercase font-bold">
-              AI INNOVATION BOARDROOM
-            </p>
-            
-            <p className="text-xs text-slate-400 leading-normal max-w-lg mt-2 font-sans">
-              State your business hypothesis. Swarm is your AI Innovation Boardroom convening multi-agent diagnostics to evaluate market need, challenge threats, configure database architectures, and synthesize executive roadmaps.
-            </p>
+            <div className="space-y-1.5 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <span className="text-[10px] font-mono tracking-widest uppercase text-teal-400 font-bold bg-teal-950/45 border border-teal-500/20 px-2.5 py-0.5 rounded">
+                  STARTUP VALIDATION STUDIO
+                </span>
+                <span className="text-[10px] font-mono tracking-wider text-slate-550">
+                  Enterprise Edition
+                </span>
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-[0.25em] bg-gradient-to-r from-blue-400 via-indigo-200 to-teal-400 bg-clip-text text-transparent uppercase pt-1">
+                SWARM
+              </h1>
+              
+              <p className="text-base font-semibold text-[#E0E0E0] font-sans tracking-wide uppercase font-bold">
+                AI INNOVATION BOARDROOM
+              </p>
+              
+              <p className="text-xs text-slate-400 leading-normal max-w-lg mt-2 font-sans">
+                State your business hypothesis. Swarm is your AI Innovation Boardroom convening multi-agent diagnostics to evaluate market need, challenge threats, configure database architectures, and synthesize executive roadmaps.
+              </p>
+            </div>
           </div>
 
           {/* Engine Real-time stats */}
@@ -900,9 +970,50 @@ export default function App() {
               </div>
 
               {authError && (
-                <div id="auth-error-banner" className="p-3 mb-4 rounded bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-mono text-center">
-                  {authError}
-                </div>
+                authError.includes("unauthorized-domain") ? (
+                  <div id="auth-error-banner" className="mb-6 p-4 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs text-slate-300">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold mb-2">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      <span>Firebase Unauthorized Domain Error</span>
+                    </div>
+                    <p className="mb-3 leading-relaxed">
+                      Google Sign-In requires your current preview domain to be whitelisted in your Firebase project.
+                    </p>
+                    <div className="bg-[#121215] border border-white/5 rounded p-3 mb-3 font-mono text-[11px] space-y-1">
+                      <div className="text-slate-400 font-bold">Domain to copy:</div>
+                      <div className="flex items-center justify-between gap-2 bg-black/40 px-2 py-1.5 rounded border border-white/5 font-mono text-amber-200 select-all overflow-x-auto">
+                        <span>{window.location.hostname}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.hostname);
+                            setCopiedHost(true);
+                            setTimeout(() => setCopiedHost(false), 2000);
+                          }}
+                          className="flex-shrink-0 text-[10px] px-2 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-semibold flex items-center gap-1 transition cursor-pointer"
+                        >
+                          {copiedHost ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {copiedHost ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 text-slate-300">
+                      <div className="font-semibold text-white">How to fix this:</div>
+                      <ol className="list-decimal pl-4 space-y-1">
+                        <li>Go to your <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-0.5 font-semibold">Firebase Console <ExternalLink className="w-3 h-3 inline" /></a>.</li>
+                        <li>Navigate to <strong>Authentication</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Authorized domains</strong>.</li>
+                        <li>Click <strong>Add domain</strong> and paste the copied domain.</li>
+                      </ol>
+                    </div>
+                    <p className="mt-3 pt-2.5 border-t border-white/5 text-slate-400">
+                      <strong>Protip:</strong> You can also skip this entirely by using the <strong>Email &amp; Password</strong> form below, which works immediately without any domain setup!
+                    </p>
+                  </div>
+                ) : (
+                  <div id="auth-error-banner" className="p-3 mb-4 rounded bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-mono text-center">
+                    {authError}
+                  </div>
+                )
               )}
 
               {/* Secure simulated Google Login */}

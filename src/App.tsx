@@ -448,8 +448,8 @@ export default function App() {
                       by <strong className="font-semibold text-slate-400">SRASS</strong>
                     </span>
                   </div>
-                  <p className="text-[9px] text-slate-400 tracking-wider font-mono uppercase mt-0.5">
-                    Research • Critique • Engineer • Decide
+                  <p className="text-[9px] text-blue-400 tracking-wider font-mono uppercase mt-0.5">
+                    AI Innovation Boardroom System
                   </p>
                 </div>
               </div>
@@ -506,73 +506,6 @@ export default function App() {
       {/* 2. Main Workspace Layout */}
       <main className="max-w-7xl mx-auto w-full px-4 py-8 flex-grow flex flex-col gap-6">
 
-        {/* Top Branding Section (Startup Ready) */}
-        <div className="bg-[#0D0D10] border border-white/5 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md">
-          <div className="absolute -left-12 -top-12 w-48 h-48 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
-          <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
-          
-          <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full md:max-w-xl">
-            <div className="group relative w-16 h-16 rounded-xl overflow-hidden border border-white/10 shadow-lg flex-shrink-0">
-              <img 
-                src={swarmLogo} 
-                alt="Swarm AI Logo" 
-                className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                referrerPolicy="no-referrer"
-              />
-              <a 
-                href={swarmLogo} 
-                download="swarm_ai_logo.jpg"
-                title="Download Logo"
-                className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white transition-opacity duration-200 cursor-pointer font-mono"
-              >
-                <Download className="w-3.5 h-3.5 mb-0.5" />
-                <span>Save</span>
-              </a>
-            </div>
-            <div className="space-y-1.5 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-3">
-                <span className="text-[10px] font-mono tracking-widest uppercase text-teal-400 font-bold bg-teal-950/45 border border-teal-500/20 px-2.5 py-0.5 rounded">
-                  STARTUP VALIDATION STUDIO
-                </span>
-                <span className="text-[10px] font-mono tracking-wider text-slate-550">
-                  Enterprise Edition
-                </span>
-              </div>
-              
-              <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-[0.25em] bg-gradient-to-r from-blue-400 via-indigo-200 to-teal-400 bg-clip-text text-transparent uppercase pt-1">
-                SWARM
-              </h1>
-              
-              <p className="text-base font-semibold text-[#E0E0E0] font-sans tracking-wide uppercase font-bold">
-                AI INNOVATION BOARDROOM
-              </p>
-              
-              <p className="text-xs text-slate-400 leading-normal max-w-lg mt-2 font-sans">
-                State your business hypothesis. Swarm is your AI Innovation Boardroom convening multi-agent diagnostics to evaluate market need, challenge threats, configure database architectures, and synthesize executive roadmaps.
-              </p>
-            </div>
-          </div>
-
-          {/* Engine Real-time stats */}
-          <div className="border border-white/5 bg-[#121214] rounded-lg p-4 font-mono text-xs text-slate-400 space-y-2.5 min-w-[250px] z-10 w-full md:w-auto">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-500">Engine Cluster:</span>
-              <span className="text-emerald-400 font-semibold uppercase flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Active
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
-              <span className="text-slate-500">Board Dialectics:</span>
-              <span className="text-slate-300">Asynchronous</span>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-2">
-              <span className="text-slate-500">Orchestration:</span>
-              <span className="text-indigo-400 font-semibold uppercase font-bold">Gemini Swarm</span>
-            </div>
-          </div>
-        </div>
-
         {/* The Grid Workspace */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
@@ -596,7 +529,7 @@ export default function App() {
 
             <form onSubmit={executeAnalysis} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1 font-mono">Formulate Innovation Pitch:</label>
+                <label className="block text-xs text-slate-400 mb-1 font-mono">Formulate Your Idea or Project Pitch:</label>
                 <textarea
                   id="idea_textarea"
                   value={ideaInput}
@@ -605,7 +538,7 @@ export default function App() {
                     if (errorMsg) setErrorMsg(null);
                   }}
                   disabled={isAnalyzing}
-                  placeholder="Describe your start-up or technology idea in detail. Detail the purpose, mechanics, and vision..."
+                  placeholder="Describe your project, academic theory, side-hustle, or startup idea in detail. Share the purpose, core mechanics, and your vision..."
                   className="w-full h-36 bg-[#161618] border border-white/10 rounded p-3 text-sm text-blue-100 placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/10 disabled:opacity-40 custom-scrollbar resize-none"
                 />
               </div>

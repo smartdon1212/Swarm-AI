@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { SurveyFeedback } from "../types";
-import { Star, MessageSquare, Send, Sparkles, Trophy, Cake, RefreshCw, CheckCircle } from "lucide-react";
+import { Star, MessageSquare, Send, Sparkles, Trophy, ClipboardList, RefreshCw, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { auth } from "../App";
 
 interface LaunchSurveyProps {
@@ -10,6 +10,9 @@ interface LaunchSurveyProps {
 }
 
 export default function LaunchSurvey({ projectId, userId, userName = "Anonymous Guest" }: LaunchSurveyProps) {
+  const [overallRating, setOverallRating] = useState(5);
+  const [showIndividualRatings, setShowIndividualRatings] = useState(false);
+  const [customizedIndividual, setCustomizedIndividual] = useState(false);
   const [ratings, setRatings] = useState({
     research: 5,
     critic: 5,
@@ -47,7 +50,20 @@ export default function LaunchSurvey({ projectId, userId, userName = "Anonymous 
     }
   };
 
+  const handleOverallRate = (val: number) => {
+    setOverallRating(val);
+    if (!customizedIndividual) {
+      setRatings({
+        research: val,
+        critic: val,
+        engineer: val,
+        strategist: val,
+      });
+    }
+  };
+
   const handleRate = (role: "research" | "critic" | "engineer" | "strategist", value: number) => {
+    setCustomizedIndividual(true);
     setRatings((prev) => ({
       ...prev,
       [role]: value,
@@ -110,31 +126,31 @@ export default function LaunchSurvey({ projectId, userId, userName = "Anonymous 
   };
 
   return (
-    <div className="bg-[#0D0D10] border border-white/10 rounded-xl p-6 shadow-2xl relative overflow-hidden backdrop-blur-md flex flex-col gap-6">
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-teal-500 via-pink-500 to-blue-500 rounded-t-xl" />
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xl relative overflow-hidden flex flex-col gap-6 text-slate-900">
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-purple-600 rounded-t-xl" />
       
-      {/* Celebration Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+      {/* Quality Assurance Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Cake className="w-5 h-5 text-pink-400 animate-bounce" />
-            <span className="text-[10px] font-mono tracking-widest uppercase text-pink-400 font-bold bg-pink-950/45 border border-pink-500/20 px-2.5 py-0.5 rounded">
-              Launch Day Special • June 18
+            <ClipboardList className="w-4 h-4 text-purple-600" />
+            <span className="text-[10px] font-mono tracking-widest uppercase text-purple-900 font-bold bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded">
+              Quality Assurance • Active Validation
             </span>
           </div>
-          <h3 className="text-lg font-display font-extrabold text-white uppercase tracking-wider mt-1.5 flex items-center gap-2">
-            Swarm Launch Validation Survey
+          <h3 className="text-lg font-display font-extrabold text-slate-900 uppercase tracking-wider mt-1.5 flex items-center gap-2">
+            Swarm AI Quality & Validation Survey
           </h3>
-          <p className="text-xs text-slate-400 mt-1 leading-normal font-sans">
-            It is launch day! Express your feedback to optimize agent clashing dialectics and congratulate the creators.
+          <p className="text-xs text-slate-600 mt-1 leading-normal font-sans">
+            Your evaluation helps tune the dialectical weights, prompt dynamics, and strategic output quality of the multi-agent boardroom.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 bg-teal-500/10 border border-teal-500/30 rounded-lg p-2.5 px-3">
-          <Trophy className="w-5 h-5 text-teal-400" />
+        <div className="flex items-center gap-2.5 bg-purple-50 border border-purple-200 rounded-lg p-2.5 px-3">
+          <Trophy className="w-5 h-5 text-purple-700" />
           <div>
-            <span className="text-[9px] text-slate-450 uppercase tracking-widest font-mono block">Project Approval</span>
-            <strong className="text-base text-teal-300 font-mono block">
+            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono block">Project Approval</span>
+            <strong className="text-base text-purple-900 font-mono block">
               {existingSurveys.length > 0 ? `${computeAverage(existingSurveys)} / 5.0` : "No ratings"}
             </strong>
           </div>
@@ -144,137 +160,179 @@ export default function LaunchSurvey({ projectId, userId, userName = "Anonymous 
       {/* Main Feedback Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h4 className="text-xs font-mono font-semibold tracking-wider text-teal-300 uppercase mb-4 flex items-center gap-1.5">
-            <Star className="w-4 h-4 text-teal-400 fill-teal-400" />
+          <h4 className="text-xs font-mono font-bold tracking-wider text-purple-800 uppercase mb-4 flex items-center gap-1.5">
+            <Star className="w-4 h-4 text-purple-600 fill-purple-600" />
             Rate Board Dialectics Action
           </h4>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* 1. Research Agent */}
-            <div className="flex items-center justify-between gap-4 p-2 bg-[#121215] border border-white/5 rounded">
-              <div>
-                <span className="text-xs font-semibold text-slate-200 block">Dr. Evelyn Carter</span>
-                <span className="text-[9px] text-slate-500 font-mono">Research Specialist Accuracy</span>
-              </div>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleRate("research", star)}
-                    className="p-1 text-slate-600 hover:text-amber-400 focus:outline-none transition-colors"
-                  >
-                    <Star
-                      className={`w-4 h-4 ${
-                        star <= ratings.research ? "text-amber-400 fill-amber-400" : "text-slate-700"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 2. Critic Agent */}
-            <div className="flex items-center justify-between gap-4 p-2 bg-[#121215] border border-white/5 rounded">
-              <div>
-                <span className="text-xs font-semibold text-slate-200 block">Julian Vance</span>
-                <span className="text-[9px] text-slate-500 font-mono">Threat & Risk Audit Sharpness</span>
-              </div>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleRate("critic", star)}
-                    className="p-1 text-slate-600 hover:text-rose-400 focus:outline-none transition-colors"
-                  >
-                    <Star
-                      className={`w-4 h-4 ${
-                        star <= ratings.critic ? "text-rose-400 fill-rose-400" : "text-slate-700"
-                      }`}
-                    />
-                  </button>
-                ))}
+            {/* Primary Overall Rating */}
+            <div className="p-3.5 bg-purple-50/80 border border-purple-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-xs font-bold text-purple-950 block font-sans">How useful was this deliberation?</span>
+                  <span className="text-[10px] text-purple-700 font-mono">Primary Quality Rating (Required)</span>
+                </div>
+                <div className="flex gap-1 bg-white p-1 rounded-lg border border-purple-200 shadow-2xs">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => handleOverallRate(star)}
+                      className="p-1 text-slate-300 hover:text-purple-600 focus:outline-none transition-colors cursor-pointer"
+                    >
+                      <Star
+                        className={`w-5 h-5 ${
+                          star <= overallRating ? "text-purple-600 fill-purple-600" : "text-slate-300"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* 3. Engineer Agent */}
-            <div className="flex items-center justify-between gap-4 p-2 bg-[#121215] border border-white/5 rounded">
-              <div>
-                <span className="text-xs font-semibold text-slate-200 block">Chief Architect Linus</span>
-                <span className="text-[9px] text-slate-500 font-mono">Systems Architecture Feasibility</span>
-              </div>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleRate("engineer", star)}
-                    className="p-1 text-slate-600 hover:text-emerald-400 focus:outline-none transition-colors"
-                  >
-                    <Star
-                      className={`w-4 h-4 ${
-                        star <= ratings.engineer ? "text-emerald-400 fill-emerald-400" : "text-slate-700"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Collapsible Individual Agent Ratings Accordion */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowIndividualRatings(!showIndividualRatings)}
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-mono font-bold text-slate-700 hover:text-purple-900 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <span>Rate individual agents (optional)</span>
+                {showIndividualRatings ? <ChevronUp className="w-4 h-4 text-purple-600" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+              </button>
 
-            {/* 4. Strategist Verdict */}
-            <div className="flex items-center justify-between gap-4 p-2 bg-[#121215] border border-white/5 rounded">
-              <div>
-                <span className="text-xs font-semibold text-slate-200 block">Consensus Director Swarm AI</span>
-                <span className="text-[9px] text-slate-500 font-mono">Roadmap and Overall Verdict Value</span>
-              </div>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleRate("strategist", star)}
-                    className="p-1 text-slate-600 hover:text-blue-400 focus:outline-none transition-colors"
-                  >
-                    <Star
-                      className={`w-4 h-4 ${
-                        star <= ratings.strategist ? "text-blue-400 fill-blue-400" : "text-slate-700"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
+              {showIndividualRatings && (
+                <div className="p-3.5 pt-1 space-y-2.5 border-t border-slate-200 bg-white">
+                  {/* 1. Research Agent */}
+                  <div className="flex items-center justify-between gap-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Dr. Evelyn Carter</span>
+                      <span className="text-[9px] text-slate-500 font-mono">Research Specialist</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRate("research", star)}
+                          className="p-1 text-slate-300 hover:text-purple-600 focus:outline-none transition-colors cursor-pointer"
+                        >
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              star <= ratings.research ? "text-purple-600 fill-purple-600" : "text-slate-300"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Critic Agent */}
+                  <div className="flex items-center justify-between gap-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Julian Vance</span>
+                      <span className="text-[9px] text-slate-500 font-mono">Threat &amp; Risk Auditor</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRate("critic", star)}
+                          className="p-1 text-slate-300 hover:text-purple-600 focus:outline-none transition-colors cursor-pointer"
+                        >
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              star <= ratings.critic ? "text-purple-600 fill-purple-600" : "text-slate-300"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3. Engineer Agent */}
+                  <div className="flex items-center justify-between gap-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Chief Architect Linus</span>
+                      <span className="text-[9px] text-slate-500 font-mono">Systems Architect</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRate("engineer", star)}
+                          className="p-1 text-slate-300 hover:text-purple-600 focus:outline-none transition-colors cursor-pointer"
+                        >
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              star <= ratings.engineer ? "text-purple-600 fill-purple-600" : "text-slate-300"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 4. Strategist Verdict */}
+                  <div className="flex items-center justify-between gap-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Consensus Director</span>
+                      <span className="text-[9px] text-slate-500 font-mono">Swarm AI Strategy Roadmap</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRate("strategist", star)}
+                          className="p-1 text-slate-300 hover:text-purple-600 focus:outline-none transition-colors cursor-pointer"
+                        >
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              star <= ratings.strategist ? "text-purple-600 fill-purple-600" : "text-slate-300"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-400 mb-1.5 flex items-center justify-between">
-                <span>Notes, Wishlist, or Birthday Greetings:</span>
-                <span className="text-[10px] text-slate-600">Optional</span>
+              <label className="block text-xs font-mono text-slate-700 mb-1.5 flex items-center justify-between font-medium">
+                <span>Notes, Wishlist, or Suggestions:</span>
+                <span className="text-[10px] text-slate-400">Optional</span>
               </label>
               <textarea
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                placeholder="Write your suggestions, feedback, or sweet birthday wishes for this June 18 launch..."
-                className="w-full h-24 bg-[#161618] border border-white/10 rounded p-3 text-xs text-blue-100 placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/10 resize-none custom-scrollbar"
+                placeholder="Write your suggestions, feature requests, or dialectic feedback for the Swarm AI boardroom..."
+                className="w-full h-24 bg-white border border-slate-200 rounded-lg p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 resize-none custom-scrollbar"
               />
             </div>
 
             {errorMsg && (
-              <div className="text-xs text-rose-400 font-mono bg-rose-950/20 border border-rose-500/10 p-2.5 rounded">
+              <div className="text-xs text-rose-700 font-mono bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
                 ⚠️ {errorMsg}
               </div>
             )}
 
             {success ? (
-              <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono bg-emerald-950/20 border border-emerald-500/10 p-2.5 rounded">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center gap-2 text-xs text-purple-900 font-mono bg-purple-50 border border-purple-200 p-2.5 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-purple-600" />
                 <span>Thank you! Your survey validation data has been securely saved to Firestore database!</span>
               </div>
             ) : (
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 hover:opacity-95 text-white font-bold h-10 rounded text-xs uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold h-10 rounded-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 shadow-sm"
               >
                 {submitting ? (
                   <>
@@ -293,10 +351,10 @@ export default function LaunchSurvey({ projectId, userId, userName = "Anonymous 
         </div>
 
         {/* Live Feedback Feed on the Right */}
-        <div className="border-t md:border-t-0 md:border-l border-white/5 md:pl-6 flex flex-col">
-          <h4 className="text-xs font-mono font-semibold tracking-wider text-pink-300 uppercase mb-4 flex items-center gap-1.5 justify-between">
+        <div className="border-t md:border-t-0 md:border-l border-slate-200 md:pl-6 flex flex-col">
+          <h4 className="text-xs font-mono font-bold tracking-wider text-purple-900 uppercase mb-4 flex items-center gap-1.5 justify-between">
             <span className="flex items-center gap-1.5">
-              <MessageSquare className="w-4 h-4 text-pink-400" />
+              <MessageSquare className="w-4 h-4 text-purple-600" />
               🗣️ Corporate Feedback Channel
             </span>
             <span className="text-[10px] text-slate-500 normal-case font-mono">{existingSurveys.length} entry logs</span>
@@ -305,12 +363,12 @@ export default function LaunchSurvey({ projectId, userId, userName = "Anonymous 
           <div className="space-y-3 overflow-y-auto max-h-[380px] pr-1.5 custom-scrollbar flex-1">
             {loadingExisting ? (
               <div className="text-slate-500 italic text-xs py-10 flex items-center justify-center gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin text-teal-400" />
+                <RefreshCw className="w-4 h-4 animate-spin text-purple-600" />
                 Syncing with Firestore logs...
               </div>
             ) : existingSurveys.length === 0 ? (
-              <div className="text-slate-500 italic text-xs py-12 text-center border border-dashed border-white/5 rounded-lg bg-white/2">
-                Launch day awaits! Be the first to validation-test this micro-campaign.
+              <div className="text-slate-500 italic text-xs py-12 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50">
+                Be the first to submit a validation rating for this session.
               </div>
             ) : (
               existingSurveys.map((survey) => {
@@ -323,35 +381,35 @@ export default function LaunchSurvey({ projectId, userId, userName = "Anonymous 
                 ).toFixed(1);
 
                 return (
-                  <div key={survey.id} className="p-3.5 rounded bg-[#121215] border border-white/5 flex flex-col gap-2">
+                  <div key={survey.id} className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-[10px] font-bold uppercase font-mono">
+                        <div className="w-7 h-7 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-900 text-[10px] font-bold uppercase font-mono">
                           {userName.substring(0, 2)}
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-slate-200 block truncate leading-tight">
+                          <span className="text-xs font-bold text-slate-900 block truncate leading-tight">
                             {survey.userId === userId ? "You" : "Co-Founder Advisor"}
                           </span>
-                          <span className="text-[9px] text-slate-550 font-mono leading-none block">
+                          <span className="text-[9px] text-slate-500 font-mono leading-none block">
                             {new Date(survey.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Active Session
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">
-                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        <span className="text-[11px] font-bold text-amber-400 font-mono leading-none">{avg}</span>
+                      <div className="flex items-center gap-1 bg-purple-100 border border-purple-200 rounded px-1.5 py-0.5">
+                        <Star className="w-3 h-3 text-purple-600 fill-purple-600" />
+                        <span className="text-[11px] font-bold text-purple-900 font-mono leading-none">{avg}</span>
                       </div>
                     </div>
 
                     {survey.comments && (
-                      <p className="text-xs text-slate-350 bg-slate-950/30 p-2.5 rounded border border-white/2 line-clamp-4 leading-normal font-sans italic">
+                      <p className="text-xs text-slate-700 bg-white p-2.5 rounded border border-slate-200 line-clamp-4 leading-normal font-sans italic">
                         &ldquo;{survey.comments}&rdquo;
                       </p>
                     )}
 
-                    <div className="grid grid-cols-4 gap-1 text-[8px] font-mono uppercase text-slate-500 items-center justify-between border-t border-white/2 pt-2">
+                    <div className="grid grid-cols-4 gap-1 text-[8px] font-mono uppercase text-slate-500 items-center justify-between border-t border-slate-200 pt-2">
                       <span className="truncate">Res: {survey.ratings.research}⭐</span>
                       <span className="truncate">Crt: {survey.ratings.critic}⭐</span>
                       <span className="truncate">Eng: {survey.ratings.engineer}⭐</span>
